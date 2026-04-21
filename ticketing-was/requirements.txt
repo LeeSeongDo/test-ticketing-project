@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+request
+sqlalchemy
+pymysql
+cryptography
+redis
+pyjwt
+python-multipart

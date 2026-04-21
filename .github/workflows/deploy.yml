@@ -1,0 +1,38 @@
+name: Ticketing System CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted  # <--- 방금 만든 'master' 비서를 호출합니다!
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Build and push Docker image
+      run: |
+        docker build -t kingking4105/ticketing-was:latest ./ticketing-was
+        docker push kingking4105/ticketing-was:latest
+
+    - name: Deploy to K8s
+      run: |
+        mkdir -p ~/.kube
+        echo "${{ secrets.KUBE_CONFIG }}" > ~/.kube/config
+
+        # 핵심 수정: 에러 나는 ns.json 무시하고, 실제 배포 파일만 실행!
+        # 파일 이름을 정확하게 지정해 주는 게 가장 안전합니다.
+        kubectl apply -f ./ticketing-was/ticketing-deploy.yaml
+
+        # 확실하게 재시작해서 새 이미지 반영
+        kubectl rollout restart deployment/ticketing-was-deploy
+
+        # 완료 대기
+        kubectl rollout status deployment/ticketing-was-deploy
