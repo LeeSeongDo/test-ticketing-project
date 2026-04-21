@@ -3,19 +3,19 @@ version: 0.2
 phases:
   pre_build:
     commands:
+      - echo "--- 현재 디렉토리 구조 확인 ---"
+      - ls -R  # 이 명령어가 폴더 구조를 로그에 다 보여줍니다.
       - echo "--- AWS ECR 로그인 단계 ---"
       - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
       - REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME
       - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
       - IMAGE_TAG=${COMMIT_HASH:=latest}
-
   build:
     commands:
       - echo "--- Docker 이미지 빌드 시작 ---"
-      # [핵심 수정 부분] 최상단이 아닌 ticketing-was 폴더 안의 Dockerfile을 사용하도록 지정합니다.
+      # 만약 ls -R 결과에서 폴더가 보이지 않는다면 아래 경로를 . 으로 수정해야 할 수도 있습니다.
       - docker build -t $REPOSITORY_URI:latest -f ticketing-was/Dockerfile ./ticketing-was
       - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
-
   post_build:
     commands:
       - echo "--- 빌드 완료 후 ECR 푸시 ---"
